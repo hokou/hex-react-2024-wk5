@@ -8,6 +8,19 @@ const API_PATH = import.meta.env.VITE_API_PATH;
 function App() {
   const [products, setProducts] = useState([]);
   const [tempProduct, setTempProduct] = useState([]);
+  const [qtySelect, setQtySelect] = useState(1);
+  const [cart, setCart] = useState([]);
+
+  const getCart = async () => {
+    try {
+      const res = await axios.get(`${BASE_URL}/v2/api/${API_PATH}/cart`);
+      console.log(res);
+      setCart(res.data.data);
+    } catch (error) {
+      console.error(error);
+      alert("取得購物車失敗");
+    }
+  };
 
   useEffect(() => {
     const getProducts = async () => {
@@ -20,6 +33,7 @@ function App() {
       }
     };
     getProducts();
+    getCart();
   }, []);
 
   const productModalRef = useRef(null);
@@ -42,7 +56,25 @@ function App() {
     openModal();
   };
 
-  const [qtySelect, setQtySelect] = useState(1);
+  const addCarItem = async (product_id, qty) => {
+    try {
+      const res = await axios.post(
+        `${BASE_URL}/v2/api/${API_PATH}/cart`,
+        {
+          data: {
+            product_id: product_id,
+            qty: Number(qty),
+          },
+        }
+      );
+      console.log(res);
+      getCart();
+      closeModal();
+    } catch (error) {
+      console.error(error);
+      alert("加入購物車失敗");
+    }
+  };
 
   return (
     <div className="container">
@@ -80,7 +112,7 @@ function App() {
                     >
                       查看更多
                     </button>
-                    <button type="button" className="btn btn-outline-danger">
+                    <button onClick={() => addCarItem(product.id, 1)} type="button" className="btn btn-outline-danger">
                       加到購物車
                     </button>
                   </div>
@@ -140,7 +172,7 @@ function App() {
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-primary">
+                <button onClick={() => addCarItem(tempProduct.id, qtySelect)} type="button" className="btn btn-primary">
                   加入購物車
                 </button>
               </div>
@@ -165,47 +197,49 @@ function App() {
           </thead>
 
           <tbody>
-            <tr>
-              <td>
-                <button type="button" className="btn btn-outline-danger btn-sm">
-                  x
-                </button>
-              </td>
-              <td></td>
-              <td style={{ width: "150px" }}>
-                <div className="d-flex align-items-center">
-                  <div className="btn-group me-2" role="group">
-                    <button
-                      type="button"
-                      className="btn btn-outline-dark btn-sm"
-                    >
-                      -
-                    </button>
-                    <span
-                      className="btn border border-dark"
-                      style={{ width: "50px", cursor: "auto" }}
-                    ></span>
-                    <button
-                      type="button"
-                      className="btn btn-outline-dark btn-sm"
-                    >
-                      +
-                    </button>
+            {cart.carts?.map((cartItem) => (
+              <tr key={cartItem.id}>
+                <td>
+                  <button type="button" className="btn btn-outline-danger btn-sm">
+                    x
+                  </button>
+                </td>
+                <td>{cartItem.product.title}</td>
+                <td style={{ width: "150px" }}>
+                  <div className="d-flex align-items-center">
+                    <div className="btn-group me-2" role="group">
+                      <button
+                        type="button"
+                        className="btn btn-outline-dark btn-sm"
+                      >
+                        -
+                      </button>
+                      <span
+                        className="btn border border-dark"
+                        style={{ width: "50px", cursor: "auto" }}
+                      >{cartItem.qty}</span>
+                      <button
+                        type="button"
+                        className="btn btn-outline-dark btn-sm"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <span className="input-group-text bg-transparent border-0">
+                      {cartItem.product.unit}
+                    </span>
                   </div>
-                  <span className="input-group-text bg-transparent border-0">
-                    unit
-                  </span>
-                </div>
-              </td>
-              <td className="text-end">單項總價</td>
-            </tr>
+                </td>
+                <td className="text-end">{cartItem.total}</td>
+              </tr>
+            ))}
           </tbody>
           <tfoot>
             <tr>
               <td colSpan="3" className="text-end">
                 總計：
               </td>
-              <td className="text-end" style={{ width: "130px" }}></td>
+              <td className="text-end" style={{ width: "130px" }}>{cart.total}</td>
             </tr>
           </tfoot>
         </table>
