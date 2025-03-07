@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import axios from "axios";
 import { Modal } from "bootstrap";
+import ReactLoading from "react-loading";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 const API_PATH = import.meta.env.VITE_API_PATH;
@@ -11,6 +12,8 @@ function App() {
   const [tempProduct, setTempProduct] = useState([]);
   const [qtySelect, setQtySelect] = useState(1);
   const [cart, setCart] = useState([]);
+  const [isScreenLoading, setIsScreenLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const getCart = async () => {
     try {
@@ -25,12 +28,15 @@ function App() {
 
   useEffect(() => {
     const getProducts = async () => {
+      setIsScreenLoading(true);
       try {
         const res = await axios.get(`${BASE_URL}/v2/api/${API_PATH}/products`);
         setProducts(res.data.products);
       } catch (error) {
         console.error(error);
         alert("取得產品失敗");
+      } finally {
+        setIsScreenLoading(false);
       }
     };
     getProducts();
@@ -58,6 +64,7 @@ function App() {
   };
 
   const addCarItem = async (product_id, qty) => {
+    setIsLoading(true);
     try {
       const res = await axios.post(
         `${BASE_URL}/v2/api/${API_PATH}/cart`,
@@ -74,30 +81,39 @@ function App() {
     } catch (error) {
       console.error(error);
       alert("加入購物車失敗");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const removeCart = async () => {
+    setIsScreenLoading(true);
     try {
       await axios.delete(`${BASE_URL}/v2/api/${API_PATH}/carts`);
       getCart();
     } catch (error) {
       console.error(error);
       alert("刪除購物車失敗");
+    } finally {
+      setIsScreenLoading(false);
     }
   };
 
   const removeCartItem = async (cartItem_id) => {
+    setIsScreenLoading(true);
     try {
       await axios.delete(`${BASE_URL}/v2/api/${API_PATH}/cart/${cartItem_id}`);
       getCart();
     } catch (error) {
       console.error(error);
       alert("刪除購物車物品失敗");
+    } finally {
+      setIsScreenLoading(false);
     }
   };
 
   const updateCartItem = async (cartItem_id, product_id, qty) => {
+    setIsScreenLoading(true);
     try {
       await axios.put(`${BASE_URL}/v2/api/${API_PATH}/cart/${cartItem_id}`, {
         data: {
@@ -109,6 +125,8 @@ function App() {
     } catch (error) {
       console.error(error);
       alert("更新購物車物品失敗");
+    } finally {
+      setIsScreenLoading(false);
     }
   };
 
@@ -116,6 +134,7 @@ function App() {
     register,
     handleSubmit,
     formState: { errors },
+    reset
   } = useForm();
 
   const onSubmit = handleSubmit(async (data) => {
@@ -131,13 +150,17 @@ function App() {
   });
 
   const checkout = async (data) => {
+    setIsScreenLoading(true);
     try {
       await axios.post(`${BASE_URL}/v2/api/${API_PATH}/order`, data);
       alert("結帳成功");
+      reset();
       getCart();
     } catch (error) {
       console.error(error);
       alert("結帳失敗");
+    } finally {
+      setIsScreenLoading(false);
     }
   }
 
@@ -178,8 +201,18 @@ function App() {
                     >
                       查看更多
                     </button>
-                    <button onClick={() => addCarItem(product.id, 1)} type="button" className="btn btn-outline-danger">
+                    <button 
+                      disabled={isLoading}
+                      onClick={() => addCarItem(product.id, 1)} type="button" className="btn btn-outline-danger d-flex align-items-center">
                       加到購物車
+                      {isLoading && (
+                        <ReactLoading
+                          type={"spin"}
+                          color={"#000"}
+                          height={"1.5rem"}
+                          width={"1.5rem"}
+                        />
+                      )}
                     </button>
                   </div>
                 </td>
@@ -238,8 +271,18 @@ function App() {
                 </div>
               </div>
               <div className="modal-footer">
-                <button onClick={() => addCarItem(tempProduct.id, qtySelect)} type="button" className="btn btn-primary">
+                <button
+                  disabled={isLoading}
+                  onClick={() => addCarItem(tempProduct.id, qtySelect)} type="button" className="btn btn-primary d-flex align-items-center gap-2">
                   加入購物車
+                  {isLoading && (
+                    <ReactLoading
+                      type={"spin"}
+                      color={"#000"}
+                      height={"1.5rem"}
+                      width={"1.5rem"}
+                    />
+                  )}
                 </button>
               </div>
             </div>
@@ -413,6 +456,19 @@ function App() {
           </div>
         </form>
       </div>
+      { isScreenLoading && (
+        <div
+          className="d-flex justify-content-center align-items-center"
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(255,255,255,0.3)",
+            zIndex: 999,
+          }}
+        >
+          <ReactLoading type="spin" color="black" width="4rem" height="4rem" />
+        </div>
+      )}
     </div>
   );
 }
