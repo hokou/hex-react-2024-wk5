@@ -86,13 +86,28 @@ function App() {
     }
   };
 
-  const removeCartItem = async (cartItemId) => {
+  const removeCartItem = async (cartItem_id) => {
     try {
-      await axios.delete(`${BASE_URL}/v2/api/${API_PATH}/cart/${cartItemId}`);
+      await axios.delete(`${BASE_URL}/v2/api/${API_PATH}/cart/${cartItem_id}`);
       getCart();
     } catch (error) {
       console.error(error);
-      alert("刪除購物車失敗");
+      alert("刪除購物車物品失敗");
+    }
+  };
+
+  const updateCartItem = async (cartItem_id, product_id, qty) => {
+    try {
+      await axios.put(`${BASE_URL}/v2/api/${API_PATH}/cart/${cartItem_id}`, {
+        data: {
+          product_id: product_id,
+          qty: Number(qty),
+        },
+      });
+      getCart();
+    } catch (error) {
+      console.error(error);
+      alert("更新購物車物品失敗");
     }
   };
 
@@ -231,6 +246,8 @@ function App() {
                         <div className="d-flex align-items-center">
                           <div className="btn-group me-2" role="group">
                             <button
+                              onClick={() => updateCartItem(cartItem.id, cartItem.product_id, cartItem.qty - 1)}
+                              disabled={cartItem.qty === 1}
                               type="button"
                               className="btn btn-outline-dark btn-sm"
                             >
@@ -241,6 +258,7 @@ function App() {
                               style={{ width: "50px", cursor: "auto" }}
                             >{cartItem.qty}</span>
                             <button
+                              onClick={() => updateCartItem(cartItem.id, cartItem.product_id, cartItem.qty + 1)}
                               type="button"
                               className="btn btn-outline-dark btn-sm"
                             >
